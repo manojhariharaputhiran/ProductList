@@ -11,9 +11,9 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- THE TRANSLATION ENGINE ---
-# We do this at the app level to ensure it always works regardless of the CSV state
+# --- THE EXPANDED TRANSLATION ENGINE ---
 TRANSLATIONS = {
+    # Keywords
     '発電所保全装置': 'Power Plant Maintenance Equipment',
     '管内面用': 'Internal Pipe',
     'ウォータージェット': 'Water Jet',
@@ -27,20 +27,31 @@ TRANSLATIONS = {
     '切削': 'Cutting',
     '部品': 'Parts/Components',
     '創業の精神': 'Corporate Spirit',
+    '自ら考え、自ら造り、自ら販売・サービスする': 'Think for yourself, Create for yourself, Sell and Service for yourself',
     '高圧水技術': 'High Pressure Water Tech',
+    '空気圧技術': 'Pneumatic Tech',
+    'エネルギー市場関連': 'Energy Market Related',
+    '技術開発': 'Technical Development',
+    '現在では': 'Currently',
+    '切る・削る・洗う・磨く・砕く・解す': 'Cut, Shave, Wash, Polish, Crush, and Unravel',
+    '６つの「超技術」を展開しています': 'Developing 6 "Super Technologies"',
     'EWS Ansprechpartner': 'EWS Contact Person',
     'Produkte': 'Products',
     'Lösungen': 'Solutions',
-    'Werkzeug': 'Tooling'
+    'Werkzeug': 'Tooling',
+    'Ansprechpartner': 'Contact',
+    'Halter': 'Holder',
+    'Spannfutter': 'Chuck',
+    'Fräsen': 'Milling',
+    'Drehen': 'Turning'
 }
 
 def translate_text(text):
+    if pd.isna(text): return ""
     text = str(text)
+    # Global replacement of all mapped terms
     for jp, en in TRANSLATIONS.items():
-        if jp in text:
-            text = text.replace(jp, en)
-    # Final cleanup: if any Japanese characters remain, we know it needs more work
-    # but for now, we prioritize the mapped terms.
+        text = text.replace(jp, en)
     return text
 
 # Clean, robust CSS
@@ -56,7 +67,7 @@ st.markdown("""
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        min-height: 320px;
+        min-height: 340px;
     }
     .badge {
         background-color: #eff6ff; color: #1e40af;
@@ -69,20 +80,20 @@ st.markdown("""
         margin-bottom: 8px; min-height: 3rem;
     }
     .source { color: #3b82f6; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; }
-    .desc { color: #64748b; font-size: 0.85rem; line-height: 1.6; height: 6.5rem; overflow: hidden; }
+    .desc { 
+        color: #64748b; font-size: 0.85rem; line-height: 1.6; 
+        height: 7.5rem; overflow: hidden;
+        display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 @st.cache_data
 def load_data():
-    # Load the original data
     df = pd.read_csv('imtex_products_final.csv')
-    df['Description'] = df['Description'].fillna('Detailed specifications available in the full catalog.')
-    
-    # Pre-apply translation to the cached dataframe for speed
+    # Apply translation to BOTH Name and Description
     df['Product Name'] = df['Product Name'].apply(translate_text)
     df['Description'] = df['Description'].apply(translate_text)
-    
     return df
 
 try:
@@ -139,7 +150,6 @@ else:
         
         for j, (idx, row) in enumerate(batch.iterrows()):
             with cols[j]:
-                # Escaping content for HTML safety
                 p_name = html.escape(str(row['Product Name']))
                 p_cat = html.escape(str(row['Category']))
                 p_brand = html.escape(str(row['Exhibitor Name']))
