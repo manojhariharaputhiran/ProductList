@@ -9,31 +9,41 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS for a clean, text-focused industrial look
+# Responsive CSS Grid Design
 st.markdown("""
     <style>
     .main {
         background-color: #f4f7f9;
     }
-    .stCard {
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 20px;
+    /* Responsive Grid Container */
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+        padding: 10px 0;
+    }
+    /* Individual Card */
+    .product-card {
         background-color: white;
-        transition: transform 0.2s, box-shadow 0.2s;
-        margin-bottom: 15px;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 24px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        min-height: 250px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        min-height: 280px;
     }
-    .stCard:hover {
+    .product-card:hover {
         border-color: #1f77b4;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    }
+    .card-content {
+        margin-bottom: 20px;
     }
     .product-title {
         color: #1a1a1a;
-        font-size: 1.2rem;
+        font-size: 1.15rem;
         font-weight: 700;
         line-height: 1.3;
         margin-bottom: 8px;
@@ -43,7 +53,7 @@ st.markdown("""
         color: #475569;
         padding: 4px 12px;
         border-radius: 16px;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
@@ -52,24 +62,38 @@ st.markdown("""
     }
     .exhibitor-name {
         color: #1f77b4;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         font-weight: 600;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
     }
     .description-text {
         font-size: 0.9rem;
         color: #4b5563;
         line-height: 1.5;
-        overflow: hidden;
-        text-overflow: ellipsis;
         display: -webkit-box;
         -webkit-line-clamp: 4;
         -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    /* Button Style */
+    .catalog-link {
+        display: block;
+        text-align: center;
+        background-color: #1f77b4;
+        color: white !important;
+        text-decoration: none !important;
+        padding: 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: background-color 0.2s;
+    }
+    .catalog-link:hover {
+        background-color: #155a8a;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# Cache data loading for performance
 @st.cache_data
 def load_data():
     df = pd.read_csv('imtex_products_final.csv')
@@ -82,7 +106,7 @@ except Exception as e:
     st.error(f"Error loading database: {e}")
     st.stop()
 
-# --- SIDEBAR FILTERS ---
+# --- SIDEBAR ---
 st.sidebar.header("🔍 TechSlice Search")
 search_query = st.sidebar.text_input("Global Search", placeholder="Search products or manufacturers...")
 
@@ -94,9 +118,9 @@ all_exhibitors = sorted(df['Exhibitor Name'].unique().tolist())
 selected_exhibitors = st.sidebar.multiselect("Manufacturer / Brand", all_exhibitors)
 
 st.sidebar.divider()
-st.sidebar.info("Powered by **TechSlice Solutions** - Your Intelligent Data Partner.")
+st.sidebar.info("Powered by **TechSlice Solutions**")
 
-# --- FILTER LOGIC ---
+# --- FILTERING ---
 filtered_df = df.copy()
 
 if search_query:
@@ -114,35 +138,32 @@ if selected_categories:
 if selected_exhibitors:
     filtered_df = filtered_df[filtered_df['Exhibitor Name'].isin(selected_exhibitors)]
 
-# --- MAIN UI ---
-st.title("🏗️ TechSlice Solutions: The Ultimate Industrial Index")
-st.markdown(f"Empowering your search across **{len(filtered_df):,}** high-performance products from **{df['Exhibitor Name'].nunique()}** global manufacturers.")
+# --- UI ---
+st.title("🏗️ TechSlice Solutions: Industrial Index")
+st.markdown(f"Accessing **{len(filtered_df):,}** products from **{df['Exhibitor Name'].nunique()}** global manufacturers.")
 
 if len(filtered_df) == 0:
-    st.warning("No matches found. Please adjust your search terms.")
+    st.warning("No matches found.")
 else:
-    # Display results in a clean grid
-    cols_per_row = 3
-    display_limit = 99
+    display_limit = 100
+    cards_html = ""
     
-    # Process rows in chunks
-    for i in range(0, min(len(filtered_df), display_limit), cols_per_row):
-        cols = st.columns(cols_per_row)
-        batch = filtered_df.iloc[i : i + cols_per_row]
-        
-        for j, (idx, row) in enumerate(batch.iterrows()):
-            with cols[j]:
-                st.markdown(f"""
-                    <div class="stCard">
-                        <div>
-                            <div class="category-badge">{row['Category']}</div>
-                            <div class="product-title">{row['Product Name']}</div>
-                            <div class="exhibitor-name">Source: {row['Exhibitor Name']}</div>
-                            <div class="description-text">{row['Description']}</div>
-                        </div>
-                    </div>
-                """, unsafe_allow_html=True)
-                st.link_button("🌐 Open Official Product Page", row['Source URL'], use_container_width=True)
+    # Building the HTML for the Responsive Grid
+    for idx, row in filtered_df.head(display_limit).iterrows():
+        desc = str(row['Description'])
+        cards_html += f"""
+            <div class="product-card">
+                <div class="card-content">
+                    <div class="category-badge">{row['Category']}</div>
+                    <div class="product-title">{row['Product Name']}</div>
+                    <div class="exhibitor-name">Source: {row['Exhibitor Name']}</div>
+                    <div class="description-text">{desc}</div>
+                </div>
+                <a href="{row['Source URL']}" target="_blank" class="catalog-link">🌐 Open Product Page</a>
+            </div>
+        """
+    
+    st.markdown(f'<div class="product-grid">{cards_html}</div>', unsafe_allow_html=True)
 
     if len(filtered_df) > display_limit:
-        st.info(f"Showing the top {display_limit} matches. Use filters to narrow your results.")
+        st.info(f"Showing the top {display_limit} matches. Please use filters to refine your search.")
