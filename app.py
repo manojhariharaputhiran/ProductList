@@ -1,95 +1,81 @@
 import streamlit as st
 import pandas as pd
+import html
 
 # Set page configuration
 st.set_page_config(
-    page_title="TechSlice Solutions | Industrial Product Index 2026",
+    page_title="TechSlice Solutions | Product Index",
     page_icon="🏭",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Responsive CSS Grid Design
+# Clean, robust CSS
 st.markdown("""
     <style>
     .main {
-        background-color: #f4f7f9;
+        background-color: #f8fafc;
     }
-    /* Responsive Grid Container */
-    .product-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 20px;
-        padding: 10px 0;
-    }
-    /* Individual Card */
-    .product-card {
+    /* The Card Container */
+    .card {
         background-color: white;
-        border: 1px solid #e0e0e0;
-        border-radius: 10px;
-        padding: 24px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        transition: transform 0.2s, box-shadow 0.2s;
-        min-height: 280px;
+        min-height: 320px;
+        transition: all 0.2s ease-in-out;
     }
-    .product-card:hover {
-        border-color: #1f77b4;
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    .card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
-    .card-content {
-        margin-bottom: 20px;
+    .card-top {
+        flex-grow: 1;
     }
-    .product-title {
-        color: #1a1a1a;
-        font-size: 1.15rem;
-        font-weight: 700;
-        line-height: 1.3;
-        margin-bottom: 8px;
-    }
-    .category-badge {
-        background-color: #f0f2f6;
-        color: #475569;
-        padding: 4px 12px;
-        border-radius: 16px;
+    .badge {
+        background-color: #eff6ff;
+        color: #1e40af;
+        padding: 4px 10px;
+        border-radius: 20px;
         font-size: 0.7rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
         display: inline-block;
         margin-bottom: 12px;
     }
-    .exhibitor-name {
-        color: #1f77b4;
-        font-size: 0.9rem;
+    .title {
+        color: #0f172a;
+        font-size: 1.1rem;
+        font-weight: 700;
+        line-height: 1.4;
+        margin-bottom: 8px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .source {
+        color: #3b82f6;
+        font-size: 0.85rem;
         font-weight: 600;
         margin-bottom: 12px;
     }
-    .description-text {
-        font-size: 0.9rem;
-        color: #4b5563;
-        line-height: 1.5;
+    .desc {
+        color: #64748b;
+        font-size: 0.85rem;
+        line-height: 1.6;
         display: -webkit-box;
         -webkit-line-clamp: 4;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
-    /* Button Style */
-    .catalog-link {
-        display: block;
-        text-align: center;
-        background-color: #1f77b4;
-        color: white !important;
-        text-decoration: none !important;
-        padding: 10px;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        transition: background-color 0.2s;
-    }
-    .catalog-link:hover {
-        background-color: #155a8a;
+    /* Reset Streamlit column padding for a tighter grid */
+    [data-testid="column"] {
+        padding: 0 10px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -107,12 +93,12 @@ except Exception as e:
     st.stop()
 
 # --- SIDEBAR ---
-st.sidebar.header("🔍 TechSlice Search")
-search_query = st.sidebar.text_input("Global Search", placeholder="Search products or manufacturers...")
+st.sidebar.header("🎯 Filters")
+search_query = st.sidebar.text_input("Global Search", placeholder="Keywords, brands, models...")
 
 st.sidebar.divider()
 all_categories = sorted(df['Category'].unique().tolist())
-selected_categories = st.sidebar.multiselect("Industrial Category", all_categories)
+selected_categories = st.sidebar.multiselect("Category", all_categories)
 
 all_exhibitors = sorted(df['Exhibitor Name'].unique().tolist())
 selected_exhibitors = st.sidebar.multiselect("Manufacturer / Brand", all_exhibitors)
@@ -138,32 +124,40 @@ if selected_categories:
 if selected_exhibitors:
     filtered_df = filtered_df[filtered_df['Exhibitor Name'].isin(selected_exhibitors)]
 
-# --- UI ---
+# --- MAIN UI ---
 st.title("🏗️ TechSlice Solutions: Industrial Index")
-st.markdown(f"Accessing **{len(filtered_df):,}** products from **{df['Exhibitor Name'].nunique()}** global manufacturers.")
+st.markdown(f"**{len(filtered_df):,}** matches found across **{df['Exhibitor Name'].nunique()}** global sources.")
 
 if len(filtered_df) == 0:
-    st.warning("No matches found.")
+    st.warning("No matches found. Please adjust your filters.")
 else:
-    display_limit = 100
-    cards_html = ""
+    # Use a dynamic grid based on columns
+    display_limit = 99
+    cols_per_row = 3
     
-    # Building the HTML for the Responsive Grid
-    for idx, row in filtered_df.head(display_limit).iterrows():
-        desc = str(row['Description'])
-        cards_html += f"""
-            <div class="product-card">
-                <div class="card-content">
-                    <div class="category-badge">{row['Category']}</div>
-                    <div class="product-title">{row['Product Name']}</div>
-                    <div class="exhibitor-name">Source: {row['Exhibitor Name']}</div>
-                    <div class="description-text">{desc}</div>
-                </div>
-                <a href="{row['Source URL']}" target="_blank" class="catalog-link">🌐 Open Product Page</a>
-            </div>
-        """
-    
-    st.markdown(f'<div class="product-grid">{cards_html}</div>', unsafe_allow_html=True)
+    for i in range(0, min(len(filtered_df), display_limit), cols_per_row):
+        cols = st.columns(cols_per_row)
+        batch = filtered_df.iloc[i : i + cols_per_row]
+        
+        for j, (idx, row) in enumerate(batch.iterrows()):
+            with cols[j]:
+                # Escaping content for safety
+                p_name = html.escape(str(row['Product Name']))
+                p_cat = html.escape(str(row['Category']))
+                p_brand = html.escape(str(row['Exhibitor Name']))
+                p_desc = html.escape(str(row['Description']))
+                
+                st.markdown(f"""
+                    <div class="card">
+                        <div class="card-top">
+                            <div class="badge">{p_cat}</div>
+                            <div class="title">{p_name}</div>
+                            <div class="source">Source: {p_brand}</div>
+                            <div class="desc">{p_desc}</div>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+                st.link_button("🌐 Open Catalog", row['Source URL'], use_container_width=True)
 
     if len(filtered_df) > display_limit:
-        st.info(f"Showing the top {display_limit} matches. Please use filters to refine your search.")
+        st.info(f"Showing top {display_limit} matches. Refine your filters to see more.")
