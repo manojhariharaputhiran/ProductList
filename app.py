@@ -3,7 +3,7 @@ import pandas as pd
 
 # Set page configuration
 st.set_page_config(
-    page_title="IMTEX Product Explorer 2026",
+    page_title="TechSlice Solutions | Industrial Product Index 2026",
     page_icon="🏭",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -83,15 +83,18 @@ except Exception as e:
     st.stop()
 
 # --- SIDEBAR FILTERS ---
-st.sidebar.header("🔍 Search & Filters")
-search_query = st.sidebar.text_input("Global Search", placeholder="Search products or exhibitors...")
+st.sidebar.header("🔍 TechSlice Search")
+search_query = st.sidebar.text_input("Global Search", placeholder="Search products or manufacturers...")
 
 st.sidebar.divider()
 all_categories = sorted(df['Category'].unique().tolist())
 selected_categories = st.sidebar.multiselect("Industrial Category", all_categories)
 
 all_exhibitors = sorted(df['Exhibitor Name'].unique().tolist())
-selected_exhibitors = st.sidebar.multiselect("Exhibitor Name", all_exhibitors)
+selected_exhibitors = st.sidebar.multiselect("Manufacturer / Brand", all_exhibitors)
+
+st.sidebar.divider()
+st.sidebar.info("Powered by **TechSlice Solutions** - Your Intelligent Data Partner.")
 
 # --- FILTER LOGIC ---
 filtered_df = df.copy()
@@ -112,15 +115,15 @@ if selected_exhibitors:
     filtered_df = filtered_df[filtered_df['Exhibitor Name'].isin(selected_exhibitors)]
 
 # --- MAIN UI ---
-st.title("🏗️ IMTEX 2026: The Ultimate Product Index")
-st.markdown(f"Accessing **{len(filtered_df):,}** products from **{df['Exhibitor Name'].nunique()}** global exhibitors.")
+st.title("🏗️ TechSlice Solutions: The Ultimate Industrial Index")
+st.markdown(f"Empowering your search across **{len(filtered_df):,}** high-performance products from **{df['Exhibitor Name'].nunique()}** global manufacturers.")
 
 if len(filtered_df) == 0:
     st.warning("No matches found. Please adjust your search terms.")
 else:
     # Display results in a clean grid
     cols_per_row = 3
-    display_limit = 99  # Increased limit now that images are gone
+    display_limit = 99
     
     # Process rows in chunks
     for i in range(0, min(len(filtered_df), display_limit), cols_per_row):
@@ -134,7 +137,7 @@ else:
                         <div>
                             <div class="category-badge">{row['Category']}</div>
                             <div class="product-title">{row['Product Name']}</div>
-                            <div class="exhibitor-name">Exhibitor: {row['Exhibitor Name']}</div>
+                            <div class="exhibitor-name">Source: {row['Exhibitor Name']}</div>
                             <div class="description-text">{row['Description']}</div>
                         </div>
                     </div>
