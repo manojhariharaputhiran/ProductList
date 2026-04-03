@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import html
+import re
 
 # Set page configuration
 st.set_page_config(
@@ -10,13 +11,42 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# --- THE TRANSLATION ENGINE ---
+# We do this at the app level to ensure it always works regardless of the CSV state
+TRANSLATIONS = {
+    '発電所保全装置': 'Power Plant Maintenance Equipment',
+    '管内面用': 'Internal Pipe',
+    'ウォータージェット': 'Water Jet',
+    '洗浄ノズル': 'Cleaning Nozzle',
+    'ビューレットノズル': 'Bullet Nozzle',
+    'セルフプロペラノズル': 'Self-Propelled Nozzle',
+    '小径管': 'Small Diameter Pipe',
+    '研削': 'Grinding',
+    '旋盤': 'Lathe',
+    '研磨': 'Polishing',
+    '切削': 'Cutting',
+    '部品': 'Parts/Components',
+    '創業の精神': 'Corporate Spirit',
+    '高圧水技術': 'High Pressure Water Tech',
+    'EWS Ansprechpartner': 'EWS Contact Person',
+    'Produkte': 'Products',
+    'Lösungen': 'Solutions',
+    'Werkzeug': 'Tooling'
+}
+
+def translate_text(text):
+    text = str(text)
+    for jp, en in TRANSLATIONS.items():
+        if jp in text:
+            text = text.replace(jp, en)
+    # Final cleanup: if any Japanese characters remain, we know it needs more work
+    # but for now, we prioritize the mapped terms.
+    return text
+
 # Clean, robust CSS
 st.markdown("""
     <style>
-    .main {
-        background-color: #f8fafc;
-    }
-    /* The Card Container */
+    .main { background-color: #f8fafc; }
     .card {
         background-color: white;
         border: 1px solid #e2e8f0;
@@ -27,63 +57,32 @@ st.markdown("""
         flex-direction: column;
         justify-content: space-between;
         min-height: 320px;
-        transition: all 0.2s ease-in-out;
-    }
-    .card:hover {
-        border-color: #3b82f6;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    }
-    .card-top {
-        flex-grow: 1;
     }
     .badge {
-        background-color: #eff6ff;
-        color: #1e40af;
-        padding: 4px 10px;
-        border-radius: 20px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        display: inline-block;
-        margin-bottom: 12px;
+        background-color: #eff6ff; color: #1e40af;
+        padding: 4px 10px; border-radius: 20px;
+        font-size: 0.7rem; font-weight: 700;
+        text-transform: uppercase; margin-bottom: 12px;
     }
     .title {
-        color: #0f172a;
-        font-size: 1.1rem;
-        font-weight: 700;
-        line-height: 1.4;
-        margin-bottom: 8px;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+        color: #0f172a; font-size: 1.1rem; font-weight: 700;
+        margin-bottom: 8px; min-height: 3rem;
     }
-    .source {
-        color: #3b82f6;
-        font-size: 0.85rem;
-        font-weight: 600;
-        margin-bottom: 12px;
-    }
-    .desc {
-        color: #64748b;
-        font-size: 0.85rem;
-        line-height: 1.6;
-        display: -webkit-box;
-        -webkit-line-clamp: 4;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-    /* Reset Streamlit column padding for a tighter grid */
-    [data-testid="column"] {
-        padding: 0 10px !important;
-    }
+    .source { color: #3b82f6; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; }
+    .desc { color: #64748b; font-size: 0.85rem; line-height: 1.6; height: 6.5rem; overflow: hidden; }
     </style>
     """, unsafe_allow_html=True)
 
 @st.cache_data
 def load_data():
+    # Load the original data
     df = pd.read_csv('imtex_products_final.csv')
     df['Description'] = df['Description'].fillna('Detailed specifications available in the full catalog.')
+    
+    # Pre-apply translation to the cached dataframe for speed
+    df['Product Name'] = df['Product Name'].apply(translate_text)
+    df['Description'] = df['Description'].apply(translate_text)
+    
     return df
 
 try:
@@ -126,12 +125,11 @@ if selected_exhibitors:
 
 # --- MAIN UI ---
 st.title("🏗️ TechSlice Solutions: Industrial Index")
-st.markdown(f"**{len(filtered_df):,}** matches found across **{df['Exhibitor Name'].nunique()}** global sources.")
+st.markdown(f"**{len(filtered_df):,}** matches found.")
 
 if len(filtered_df) == 0:
     st.warning("No matches found. Please adjust your filters.")
 else:
-    # Use a dynamic grid based on columns
     display_limit = 99
     cols_per_row = 3
     
@@ -141,7 +139,7 @@ else:
         
         for j, (idx, row) in enumerate(batch.iterrows()):
             with cols[j]:
-                # Escaping content for safety
+                # Escaping content for HTML safety
                 p_name = html.escape(str(row['Product Name']))
                 p_cat = html.escape(str(row['Category']))
                 p_brand = html.escape(str(row['Exhibitor Name']))
@@ -160,4 +158,4 @@ else:
                 st.link_button("🌐 Open Catalog", row['Source URL'], use_container_width=True)
 
     if len(filtered_df) > display_limit:
-        st.info(f"Showing top {display_limit} matches. Refine your filters to see more.")
+        st.info(f"Showing top {display_limit} matches.")
